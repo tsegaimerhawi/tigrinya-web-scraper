@@ -39,6 +39,17 @@ pdfs/
 pdf_metadata.json
 raw_data.json
 
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.production
+
+# Backend
+backend/__pycache__/
+backend/**/__pycache__/
+*.pyc
+
 # OS
 .DS_Store
 Thumbs.db
