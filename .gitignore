@@ -22,6 +22,8 @@ wheels/
 
 # Virtual Environment
 .env
+config.env
+
 venv/
 ENV/
 env/

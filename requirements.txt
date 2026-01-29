@@ -1,3 +1,7 @@
 playwright
 requests
 pdfplumber
+google-generativeai
+Pillow
+python-dateutil
+python-dotenv

@@ -3,7 +3,8 @@ import asyncio
 import json
 import os
 import time
-from typing import Any
+from typing import Any, Optional
+from dateutil import parser
 
 import requests
 from playwright.async_api import async_playwright
@@ -15,6 +16,8 @@ async def scrape_articles(
     newspaper_id: str = "haddas-ertra",
     max_articles: int = 20,
     max_pages: int = 50,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
     progress_callback: Any = None,
 ) -> dict:
     """Scrape and download newspaper PDFs. Returns summary dict."""
@@ -30,6 +33,19 @@ async def scrape_articles(
     os.makedirs(PDFS_DIR, exist_ok=True)
     base_url = newspaper["base_url"]
     href_filter = newspaper["link_selector_href"]
+    article_selector = 'article.listing-item'  # CSS selector for article elements
+    
+    # Parse dates and make them timezone-naive for comparison
+    parsed_start = None
+    parsed_end = None
+    if start_date and start_date.strip():
+        parsed_start = parser.parse(start_date)
+        if parsed_start.tzinfo:
+            parsed_start = parsed_start.replace(tzinfo=None)
+    if end_date and end_date.strip():
+        parsed_end = parser.parse(end_date)
+        if parsed_end.tzinfo:
+            parsed_end = parsed_end.replace(tzinfo=None)
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
@@ -37,9 +53,10 @@ async def scrape_articles(
 
         try:
             article_urls: list[str] = []
+            max_pages_to_check = 100 if (start_date or end_date) else max_pages 
 
             base = base_url.rstrip("/")
-            for page_num in range(1, max_pages + 1):
+            for page_num in range(1, max_pages_to_check + 1):
                 if progress_callback:
                     progress_callback({"stage": "collecting", "page": page_num, "urls": len(article_urls)})
 
@@ -52,42 +69,70 @@ async def scrape_articles(
                 except Exception as e:
                     break
 
-                sel = f'article.listing-item a.post-url[href*="{href_filter}"]'
-                link_elements = await page.query_selector_all(sel)
-                current: list[str] = []
+                # Query for articles on the page
+                articles = await page.query_selector_all(article_selector)
+                current_urls = []
+                
+                # Inspect articles on page for date filtering
+                found_on_page = 0
+                older_found = False
 
-                for link in link_elements:
-                    try:
-                        href = await link.get_attribute("href")
-                        if href and href not in article_urls:
-                            href = f"https://shabait.com{href}" if not href.startswith("http") else href
-                            current.append(href)
-                    except Exception:
-                        continue
+                for article in articles:
+                   try:
+                        # Date check
+                        should_include = True
+                        article_date = None
+                        date_el = await article.query_selector('.entry-date, .post-date, time')
+                        if date_el:
+                            date_text = (await date_el.text_content()).strip()
+                            try:
+                                article_date = parser.parse(date_text)
+                                # Make timezone-naive for comparison
+                                if article_date.tzinfo:
+                                    article_date = article_date.replace(tzinfo=None)
+                                    
+                                if parsed_end and article_date > parsed_end:
+                                    should_include = False
+                                if parsed_start and article_date < parsed_start:
+                                    should_include = False
+                                    older_found = True # We hit older articles
+                            except:
+                                pass # Include if date can't be parsed on listing
+                        
+                        if should_include:
+                            link = await article.query_selector(f'a.post-url[href*="{href_filter}"]')
+                            if link:
+                                href = await link.get_attribute("href")
+                                if href and href not in article_urls:
+                                    href = f"https://shabait.com{href}" if not href.startswith("http") else href
+                                    current_urls.append(href)
+                                    found_on_page += 1
+                   except Exception:
+                       continue
 
-                if not current:
+                article_urls.extend(current_urls)
+                
+                # If we hit older articles than our start date, we can stop traversing pages
+                if older_found and parsed_start:
                     break
-                article_urls.extend(current)
+                
+                # If we've collected enough articles and no date range is specified, or we hit max
                 if len(article_urls) >= max_articles:
                     break
 
             article_urls = article_urls[:max_articles]
 
-            pdf_metadata: list[dict] = [
-                {
-                    "index": i + 1,
-                    "article_url": url,
-                    "download_status": "pending",
-                    "text_extraction_status": "pending",
-                }
-                for i, url in enumerate(article_urls)
-            ]
+            pdf_metadata: list[dict] = [] # Initialize empty, append as we process/confirm
 
-            def _save_meta():
-                with open(METADATA_PATH, "w", encoding="utf-8") as f:
-                    json.dump(pdf_metadata, f, ensure_ascii=False, indent=2)
-
-            _save_meta()
+            
+            # Temporary storage to save metadata iteratively
+            # Re-read existing metadata might be safer? 
+            # For this service, let's just overwrite for the current scraping session or append?
+            # The original code overwrote. Let's stick to that for now or clear.
+            
+            # Let's process and then save.
+            
+            final_metadata = []
 
             for i, article_url in enumerate(article_urls):
                 if progress_callback:
@@ -104,6 +149,17 @@ async def scrape_articles(
 
                     date_el = await page.query_selector(".entry-date, .post-date, time")
                     date = (await date_el.text_content()).strip() if date_el else "Unknown Date"
+                    
+                    # Double check date if filtering was requested
+                    if parsed_start or parsed_end:
+                        try:
+                            article_date = parser.parse(date)
+                            if parsed_end and article_date > parsed_end:
+                                continue
+                            if parsed_start and article_date < parsed_start:
+                                continue
+                        except:
+                            pass
 
                     direct_pdf_url = None
                     icon = await page.query_selector("img.wp-image-77661")
@@ -121,47 +177,58 @@ async def scrape_articles(
                                 direct_pdf_url = href if href.startswith("http") else f"https://shabait.com{href}"
                                 break
 
+                    meta_entry = {
+                        "index": len(final_metadata) + 1,
+                        "article_url": article_url,
+                        "download_status": "pending",
+                        "text_extraction_status": "pending",
+                        "title": title,
+                        "date": date
+                    }
+
                     if direct_pdf_url:
                         def _safe(s: str) -> str:
                             return "".join(c if c not in '/\\:*?"<>|' else "-" for c in (s or ""))
 
                         filename = f"{_safe(date)}_{_safe(title)}.pdf"
                         filepath = os.path.join(PDFS_DIR, filename)
+                        
+                        meta_entry.update({
+                            "pdf_filename": filename,
+                            "pdf_filepath": filepath,
+                            "pdf_url": direct_pdf_url
+                        })
+
                         try:
                             r = requests.get(direct_pdf_url, timeout=30)
                             r.raise_for_status()
                             with open(filepath, "wb") as f:
                                 f.write(r.content)
-                            pdf_metadata[i].update(
-                                {
-                                    "download_status": "completed",
-                                    "title": title,
-                                    "date": date,
-                                    "pdf_filename": filename,
-                                    "pdf_filepath": filepath,
-                                    "pdf_url": direct_pdf_url,
-                                }
-                            )
+                            meta_entry["download_status"] = "completed"
                         except Exception as e:
-                            pdf_metadata[i]["download_status"] = "failed"
-                            pdf_metadata[i]["error"] = str(e)
+                            meta_entry["download_status"] = "failed"
+                            meta_entry["error"] = str(e)
                     else:
-                        pdf_metadata[i]["download_status"] = "failed"
-                        pdf_metadata[i]["error"] = "No PDF link found"
+                        meta_entry["download_status"] = "failed"
+                        meta_entry["error"] = "No PDF link found"
+                    
+                    final_metadata.append(meta_entry)
+                    
+                    # Save progressively
+                    with open(METADATA_PATH, "w", encoding="utf-8") as f:
+                        json.dump(final_metadata, f, ensure_ascii=False, indent=2)
 
                 except Exception as e:
-                    pdf_metadata[i]["download_status"] = "failed"
-                    pdf_metadata[i]["error"] = str(e)
+                   pass # Log error but continue
 
-                _save_meta()
                 if i < len(article_urls) - 1:
-                    time.sleep(4)
+                    time.sleep(2)
 
-            successful = sum(1 for m in pdf_metadata if m.get("download_status") == "completed")
+            successful = sum(1 for m in final_metadata if m.get("download_status") == "completed")
             return {
                 "ok": True,
                 "newspaper_id": newspaper_id,
-                "total": len(pdf_metadata),
+                "total": len(final_metadata),
                 "successful": successful,
                 "metadata_path": METADATA_PATH,
             }
@@ -176,6 +243,8 @@ def run_scrape_sync(
     newspaper_id: str = "haddas-ertra",
     max_articles: int = 20,
     max_pages: int = 50,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
 ) -> dict:
     """Synchronous wrapper for scrape_articles."""
-    return asyncio.run(scrape_articles(newspaper_id, max_articles, max_pages))
+    return asyncio.run(scrape_articles(newspaper_id, max_articles, max_pages, start_date, end_date))

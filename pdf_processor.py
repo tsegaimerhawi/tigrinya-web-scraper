@@ -1,8 +1,12 @@
-import json
 import os
+import sys
+import json
 import re
 import pdfplumber
 
+# Add backend to path to reuse ai_processor
+sys.path.append(os.path.join(os.path.dirname(__file__), 'backend'))
+from app.services import ai_processor
 
 def clean_text(text):
     """Clean extracted text by keeping only Ge'ez script characters, numbers, and punctuation."""
@@ -67,25 +71,58 @@ def clean_text(text):
     return text.strip()
 
 
-def extract_text_from_pdf(pdf_path):
-    """Extract text from PDF using pdfplumber."""
+def extract_content_from_pdf(pdf_path, pdf_name):
+    """Extract text and images from PDF using pdfplumber."""
+    text_content = ""
+    images_info = []
+    
+    # Create images directory for this PDF
+    images_dir = os.path.join(os.path.dirname(pdf_path), 'images', pdf_name.replace('.pdf', ''))
+    os.makedirs(images_dir, exist_ok=True)
+    
     try:
         with pdfplumber.open(pdf_path) as pdf:
-            full_text = ""
-            for page in pdf.pages:
+            for page_num, page in enumerate(pdf.pages):
+                # Extract text
                 try:
                     page_text = page.extract_text()
                     if page_text:
-                        full_text += page_text + "\n"
+                        text_content += page_text + "\n"
                 except:
-                    continue
+                    pass
+                
+                # Extract images
+                try:
+                    for i, image in enumerate(page.images):
+                        try:
+                            # Get image object
+                            x0, top, x1, bottom = image['x0'], image['top'], image['x1'], image['bottom']
+                            cropped_page = page.crop((x0, top, x1, bottom))
+                            img_obj = cropped_page.to_image(resolution=200)
+                            
+                            # Save image
+                            image_filename = f"page_{page_num+1}_img_{i+1}.png"
+                            image_path = os.path.join(images_dir, image_filename)
+                            img_obj.save(image_path)
+                            
+                            images_info.append({
+                                'path': image_path,
+                                'page': page_num + 1,
+                                'filename': image_filename
+                            })
+                        except Exception as img_err:
+                            print(f"Error extracting image {i} on page {page_num}: {img_err}")
+                except Exception as e:
+                    print(f"Error processing images on page {page_num}: {e}")
 
-            cleaned_text = clean_text(full_text)
+            cleaned_text = clean_text(text_content)
             words = [word for word in cleaned_text.split() if word.strip()]
-            return cleaned_text, len(words)
+            
+            return cleaned_text, len(words), images_info
+            
     except Exception as e:
         print(f"Error processing PDF {pdf_path}: {e}")
-        return "", 0
+        return "", 0, []
 
 
 def process_pdfs():
@@ -101,17 +138,37 @@ def process_pdfs():
 
     processed_data = []
 
+    print(f"Processing {len(completed_metadata)} PDFs...")
+
     for i, item in enumerate(completed_metadata):
         pdf_path = item.get('pdf_filepath')
         if not pdf_path or not os.path.exists(pdf_path):
             continue
+            
+        print(f"Processing {i+1}/{len(completed_metadata)}: {item.get('pdf_filename')}")
 
         # Extract news title from filename
         filename = item.get('pdf_filename', '')
         news_title = filename.split('_', 1)[1].replace('.pdf', '') if '_' in filename else filename.replace('.pdf', '')
 
-        # Extract text
-        extracted_text, word_count = extract_text_from_pdf(pdf_path)
+        # Extract text and images
+        extracted_text, word_count, images_info = extract_content_from_pdf(pdf_path, filename)
+        
+        # Perform AI tasks
+        print("  - Performing NER...")
+        entities = ai_processor.perform_ner(extracted_text)
+        
+        processed_images = []
+        if images_info:
+            print(f"  - Describing {len(images_info)} images...")
+            for img in images_info:
+                description = ai_processor.describe_image(img['path'])
+                processed_images.append({
+                    'path': img['path'],
+                    'filename': img['filename'],
+                    'page': img['page'],
+                    'description_tigrinya': description
+                })
 
         processed_entry = {
             'index': item.get('index'),
@@ -122,6 +179,8 @@ def process_pdfs():
             'pdf_url': item.get('pdf_url'),
             'extracted_text': extracted_text,
             'word_count': word_count,
+            'entities': entities,
+            'images': processed_images,
             'processing_status': 'completed'
         }
 
@@ -133,10 +192,12 @@ def process_pdfs():
 
     # Summary
     total_words = sum(item['word_count'] for item in processed_data)
+    print(f"\nProcessing Complete!")
     print(f"Processed {len(processed_data)} PDFs")
     print(f"Total words extracted: {total_words}")
     print(f"Average words per PDF: {total_words/len(processed_data):.1f}")
-    print("All text has been cleaned to contain only Ge'ez script characters, numbers, and punctuation (English words and navigation elements removed).")
+    print("All text has been cleaned to contain only Ge'ez script characters.")
+    print("Entities extracted and images described in Tigrinya.")
 
 
 if __name__ == "__main__":

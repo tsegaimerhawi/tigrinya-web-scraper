@@ -12,13 +12,11 @@ fi
 # Activate virtual environment
 source ../.env/bin/activate
 
-# Install dependencies if needed
-if ! python -c "import fastapi" 2>/dev/null; then
-    echo "Installing backend dependencies..."
-    pip install -r requirements.txt
-    echo "Installing Playwright browsers..."
-    playwright install chromium
-fi
+# Install/Update dependencies
+echo "Ensuring all backend dependencies are installed..."
+pip install -r requirements.txt
+echo "Installing Playwright browsers..."
+playwright install chromium
 
 # Start server
 echo "Starting FastAPI backend on http://localhost:8000"

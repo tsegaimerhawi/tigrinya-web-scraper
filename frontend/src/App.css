@@ -354,3 +354,327 @@ main {
     flex-direction: column;
   }
 }
+
+/* AI & Images Section Styles */
+.entities-section,
+.images-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #fdfdfd;
+  border: 1px solid #eee;
+  border-radius: 8px;
+}
+
+.entities-section h2,
+.images-section h2 {
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  color: #444;
+}
+
+.entities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.entity-card {
+  background: white;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #eee;
+}
+
+.entity-card h3 {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  color: #667eea;
+  border-bottom: 2px solid #667eea;
+  padding-bottom: 0.25rem;
+}
+
+.entity-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.entity-card li {
+  padding: 0.25rem 0;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.entity-card li.empty {
+  color: #999;
+  font-style: italic;
+}
+
+.images-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.image-card {
+  background: white;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #eee;
+}
+
+.image-description {
+  font-size: 0.95rem;
+  line-height: 1.4;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.image-meta {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.form-row .form-group {
+  flex: 1;
+  min-width: 180px;
+}
+
+/* Progress Styles */
+.progress-detail {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 6px;
+}
+
+.pulse {
+  animation: pulse-animation 2s infinite;
+  color: #667eea;
+  font-weight: 500;
+}
+
+@keyframes pulse-animation {
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background: #eee;
+  border-radius: 4px;
+  margin: 0.75rem 0;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  transition: width 0.3s ease;
+}
+
+.small-text {
+  font-size: 0.8rem;
+  color: #888;
+  word-break: break-all;
+}
+
+.stage {
+  text-transform: capitalize;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 0.5rem;
+}
+
+.result-summary {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #e8f5e9;
+  border-radius: 6px;
+  color: #2e7d32;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Downloaded PDFs Section */
+.downloaded-pdfs {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.downloaded-pdfs h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.pdf-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.pdf-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.pdf-item:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.1);
+}
+
+.pdf-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.pdf-name {
+  font-weight: 500;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.pdf-date {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.pdf-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.pdf-status.processed {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.pdf-status.pending {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.pdf-list-loading {
+  text-align: center;
+  padding: 1rem;
+  color: #888;
+}
+
+/* Article Selection UI */
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.info-banner {
+  margin: 1rem 0;
+  padding: 1rem 1.25rem;
+  background: #e3f2fd;
+  border-left: 4px solid #2196f3;
+  border-radius: 4px;
+}
+
+.info-banner p {
+  margin: 0;
+  color: #1565c0;
+  font-size: 0.95rem;
+}
+
+.article-card {
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.article-card.selected {
+  border-color: #667eea;
+  background: #f5f7ff;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+}
+
+.checkbox-container {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 10;
+  padding: 0.25rem;
+  cursor: pointer;
+}
+
+.checkbox-container input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #667eea;
+}
+
+.card-content {
+  padding-left: 0;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.card-header h3 {
+  margin: 0;
+  flex: 1;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-badge.processed {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-badge.pending {
+  background: #fff3e0;
+  color: #f57c00;
+}

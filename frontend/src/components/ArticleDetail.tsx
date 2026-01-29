@@ -8,7 +8,7 @@ interface Props {
   onRefresh: () => void;
 }
 
-export default function ArticleDetail({ index, onBack, onRefresh }: Props) {
+export default function ArticleDetail({ index, onBack }: Props) {
   const [article, setArticle] = useState<ArticleText | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -89,6 +89,61 @@ export default function ArticleDetail({ index, onBack, onRefresh }: Props) {
       {showNLP && article.extracted_text && (
         <NLPTools text={article.extracted_text} />
       )}
+
+      {article.entities && (
+        <div className="entities-section">
+          <h2>Extracted Entities (AI Generated)</h2>
+          <div className="entities-grid">
+            <div className="entity-card">
+              <h3>People</h3>
+              <ul>
+                {article.entities.people.length > 0 ? (
+                  article.entities.people.map((p, i) => <li key={i}>{p}</li>)
+                ) : (
+                  <li className="empty">None found</li>
+                )}
+              </ul>
+            </div>
+            <div className="entity-card">
+              <h3>Locations</h3>
+              <ul>
+                {article.entities.locations.length > 0 ? (
+                  article.entities.locations.map((l, i) => <li key={i}>{l}</li>)
+                ) : (
+                  <li className="empty">None found</li>
+                )}
+              </ul>
+            </div>
+            <div className="entity-card">
+              <h3>Organizations</h3>
+              <ul>
+                {article.entities.organizations.length > 0 ? (
+                  article.entities.organizations.map((o, i) => <li key={i}>{o}</li>)
+                ) : (
+                  <li className="empty">None found</li>
+                )}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {article.images && article.images.length > 0 && (
+        <div className="images-section">
+          <h2>Extracted Images</h2>
+          <div className="images-grid">
+            {article.images.map((img, i) => (
+              <div key={i} className="image-card">
+                <p className="image-description">
+                  <strong>Description (Tigrinya):</strong> {img.description_tigrinya || 'No description generated'}
+                </p>
+                <p className="image-meta">Page {img.page}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="text-content">
         <h2>Extracted Text</h2>
         <div className="text-box">

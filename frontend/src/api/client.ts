@@ -20,11 +20,23 @@ export interface Article {
 
 export interface ArticleText extends Article {
   extracted_text: string;
+  entities?: {
+    people: string[];
+    locations: string[];
+    organizations: string[];
+  };
+  images?: {
+    path: string;
+    filename: string;
+    page: number;
+    description_tigrinya: string;
+  }[];
 }
 
 export interface ScrapeStatus {
   running: boolean;
   stage: string | null;
+  progress?: any;
   result: any;
   error: string | null;
 }
@@ -33,6 +45,16 @@ export interface ScrapeRequest {
   newspaper_id: string;
   max_articles?: number;
   max_pages?: number;
+  start_date?: string;
+  end_date?: string;
+}
+
+export interface ProcessingStatus {
+  ok: boolean;
+  running: boolean;
+  stage: string | null;
+  result: any;
+  error: string | null;
 }
 
 export const api = {
@@ -116,5 +138,19 @@ export const api = {
     });
     const data = await res.json();
     return data.data || '';
+  },
+
+  async processPdfs(filenames: string[]): Promise<{ ok: boolean; message: string; count?: number }> {
+    const res = await fetch(`${API_BASE}/process`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filenames }),
+    });
+    return await res.json();
+  },
+
+  async getProcessingStatus(): Promise<ProcessingStatus> {
+    const res = await fetch(`${API_BASE}/process/status`);
+    return await res.json();
   },
 };
