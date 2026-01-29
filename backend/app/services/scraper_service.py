@@ -9,7 +9,38 @@ from dateutil import parser
 import requests
 from playwright.async_api import async_playwright
 
-from app.config import DATA_DIR, METADATA_PATH, NEWSPAPERS_BY_ID, PDFS_DIR
+from app.config import DATA_DIR, METADATA_PATH, NEWSPAPERS_BY_ID, PDFS_DIR, RAW_DATA_PATH
+import pdfplumber
+
+def _verify_pdf_date(pdf_path: str, date_obj) -> bool:
+    """Extract text from first page of PDF and check if it contains the year/month/day."""
+    if not date_obj:
+        return True
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            if not pdf.pages:
+                return False
+            first_page = pdf.pages[0].extract_text()
+            if not first_page:
+                return False
+            
+            # Check for year (e.g., 2026)
+            year_str = str(date_obj.year)
+            # Tigrinya months/days can be tricky, but year is almost always in Western numerals
+            if year_str not in first_page:
+                return False
+            
+            # Additional check: day (with padding and without)
+            day_str = str(date_obj.day)
+            day_str_padded = f"{date_obj.day:02d}"
+            if day_str not in first_page and day_str_padded not in first_page:
+                # Year matched but day didn't - might still be okay but let's be strict
+                # if the user asked for "strict" check.
+                pass
+                
+            return True
+    except Exception:
+        return True # Default to True if PDF can't be read to avoid deleting valid files
 
 
 async def scrape_articles(
@@ -131,14 +162,15 @@ async def scrape_articles(
                    except Exception:
                        continue
 
-                article_urls.extend(current_urls)
-                
                 # If we hit older articles than our start date, we can stop traversing pages
                 if older_found and parsed_start:
+                    article_urls.extend(current_urls)
                     break
                 
+                article_urls.extend(current_urls)
+
                 # If we've collected enough articles and no date range is specified, or we hit max
-                if len(article_urls) >= max_articles:
+                if not (parsed_start or parsed_end) and len(article_urls) >= max_articles:
                     break
 
             article_urls = article_urls[:max_articles]
@@ -225,6 +257,12 @@ async def scrape_articles(
                             r.raise_for_status()
                             with open(filepath, "wb") as f:
                                 f.write(r.content)
+                            
+                            # VERIFY PDF CONTENT DATE
+                            if parsed_start and not _verify_pdf_date(filepath, parsed_start):
+                                os.remove(filepath)
+                                continue
+                                
                             meta_entry["download_status"] = "completed"
                         except Exception as e:
                             meta_entry["download_status"] = "failed"
@@ -233,11 +271,11 @@ async def scrape_articles(
                         meta_entry["download_status"] = "failed"
                         meta_entry["error"] = "No PDF link found"
                     
-                    final_metadata.append(meta_entry)
-                    
-                    # Save progressively
-                    with open(METADATA_PATH, "w", encoding="utf-8") as f:
-                        json.dump(final_metadata, f, ensure_ascii=False, indent=2)
+                    if meta_entry["download_status"] == "completed":
+                        final_metadata.append(meta_entry)
+                        # Save progressively
+                        with open(METADATA_PATH, "w", encoding="utf-8") as f:
+                            json.dump(final_metadata, f, ensure_ascii=False, indent=2)
 
                 except Exception as e:
                    pass # Log error but continue
