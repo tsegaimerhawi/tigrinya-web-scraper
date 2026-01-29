@@ -14,13 +14,34 @@ from app.config import DATA_DIR, METADATA_PATH, NEWSPAPERS_BY_ID, PDFS_DIR
 
 async def scrape_articles(
     newspaper_id: str = "haddas-ertra",
-    max_articles: int = 20,
-    max_pages: int = 50,
+    max_articles: int = 100,
+    max_pages: int = 100,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     progress_callback: Any = None,
 ) -> dict:
     """Scrape and download newspaper PDFs. Returns summary dict."""
+    # Reset existing data if starting a new scrape
+    import shutil
+    if os.path.exists(PDFS_DIR):
+        try:
+            shutil.rmtree(PDFS_DIR)
+        except Exception:
+            pass
+    os.makedirs(PDFS_DIR, exist_ok=True)
+    
+    if os.path.exists(METADATA_PATH):
+        try:
+            os.remove(METADATA_PATH)
+        except Exception:
+            pass
+            
+    if os.path.exists(RAW_DATA_PATH):
+        try:
+            os.remove(RAW_DATA_PATH)
+        except Exception:
+            pass
+
     newspaper = NEWSPAPERS_BY_ID.get(newspaper_id)
     if not newspaper:
         return {

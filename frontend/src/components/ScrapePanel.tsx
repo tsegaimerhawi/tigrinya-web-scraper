@@ -167,7 +167,7 @@ function DownloadedPDFs() {
   const loadPdfs = async () => {
     setLoading(true);
     try {
-      const response = await api.getArticles(20, 0);
+      const response = await api.getArticles(100, 0);
       setPdfs(response.articles || []);
     } catch (err) {
       console.error('Failed to load PDFs:', err);

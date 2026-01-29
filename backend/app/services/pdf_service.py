@@ -13,9 +13,8 @@ def deduplicate_geez_chars(text: str) -> str:
     if not text:
         return ""
     
-    # Simple regex to find repeated characters and replace with one
-    # Note: Only applying to Ge'ez range \u1200-\u137F to be safe
-    # This replaces sequences like AA with A
+    # Pattern: doubled characters (AABBCC)
+    # Applying to Ge'ez range \u1200-\u137F
     result = ""
     if len(text) > 0:
         result += text[0]
@@ -25,7 +24,20 @@ def deduplicate_geez_chars(text: str) -> str:
             if is_geez and text[i] == text[i-1]:
                 continue
             result += text[i]
-    return result
+            
+    # Pattern: doubled words (ገጽገጽ) - optional but common in extraction errors
+    # Split text into potential Ge'ez blocks and deduplicate if whole blocks repeat
+    words = []
+    for word in result.split():
+        if len(word) > 2 and word[:len(word)//2] == word[len(word)//2:]:
+            # Check if it looks like a Ge'ez word repetition
+            geez_count = sum(1 for c in word if "\u1200" <= c <= "\u137F")
+            if geez_count > 1:
+                words.append(word[:len(word)//2])
+                continue
+        words.append(word)
+        
+    return " ".join(words)
 
 def clean_text(text: str) -> str:
     """Clean extracted text: keep Ge'ez, numbers, punctuation; remove English and noise."""
@@ -64,8 +76,9 @@ def clean_text(text: str) -> str:
             # Deduplicate characters
             line = deduplicate_geez_chars(line)
             
-            # Filter by word count (at least 4 words)
-            words = line.split()
+            # Filter by word count (strictly at least 4 words)
+            # Use Ge'ez aware splitting
+            words = [w for w in line.split() if any("\u1200" <= c <= "\u137F" for c in w)]
             if len(words) >= 4:
                 kept.append(line)
 
