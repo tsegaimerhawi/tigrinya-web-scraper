@@ -7,3 +7,10 @@ google-generativeai
 Pillow
 python-dateutil
 python-dotenv
+qdrant-client>=1.7.0
+llama-index-core>=0.10.0
+llama-index-embeddings-google-genai>=0.4.0
+llama-index-vector-stores-qdrant>=0.3.0
+langchain-google-genai>=2.0.0
+langchain-core>=0.3.0
+sse-starlette>=2.0.0

@@ -9,10 +9,10 @@ from dateutil import parser
 from playwright.async_api import async_playwright
 
 
-async def scrape_articles(start_date=None, end_date=None):
+async def scrape_articles(start_date=None, end_date=None, limit=50):
     """Scrape and download Haddas Ertra PDFs within a date range."""
     
-    print(f"Scraping articles" + (f" from {start_date}" if start_date else "") + (f" to {end_date}" if end_date else "") + "...")
+    print(f"Scraping articles" + (f" from {start_date}" if start_date else "") + (f" to {end_date}" if end_date else "") + f" (limit={limit})...")
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
@@ -21,7 +21,7 @@ async def scrape_articles(start_date=None, end_date=None):
         try:
             # Collect article URLs from multiple pages
             article_urls = []
-            max_articles = 50 # Increased limit to allow finding articles in range
+            max_articles = limit
             found_articles_in_range = False
             
             for page_num in range(1, 101):  # Check up to 100 pages
@@ -250,13 +250,15 @@ async def main():
     parser_args = argparse.ArgumentParser(description='Haddas Ertra Scraper')
     parser_args.add_argument('--start-date', type=str, help='Start date (YYYY-MM-DD)')
     parser_args.add_argument('--end-date', type=str, help='End date (YYYY-MM-DD)')
+    parser_args.add_argument('--limit', type=int, default=50, help='Max number of newspapers to scrape')
     args = parser_args.parse_args()
     
     start_date = parser.parse(args.start_date) if args.start_date else None
     end_date = parser.parse(args.end_date) if args.end_date else None
+    limit = max(1, min(500, args.limit))
 
     print("Starting Haddas Ertra PDF downloader...")
-    await scrape_articles(start_date, end_date)
+    await scrape_articles(start_date, end_date, limit=limit)
 
 
 if __name__ == "__main__":

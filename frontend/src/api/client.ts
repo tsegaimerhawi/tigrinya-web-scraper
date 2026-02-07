@@ -153,4 +153,13 @@ export const api = {
     const res = await fetch(`${API_BASE}/process/status`);
     return await res.json();
   },
+
+  async askRag(question: string, k = 5): Promise<{ ok: boolean; answer: string; question: string }> {
+    const res = await fetch(`${API_BASE}/rag/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, k }),
+    });
+    return res.json();
+  },
 };

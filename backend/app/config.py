@@ -7,6 +7,11 @@ PDFS_DIR = os.path.join(DATA_DIR, "pdfs")
 METADATA_PATH = os.path.join(DATA_DIR, "pdf_metadata.json")
 RAW_DATA_PATH = os.path.join(DATA_DIR, "raw_data.json")
 
+# Qdrant / RAG
+QDRANT_HOST = os.environ.get("QDRANT_HOST", "localhost")
+QDRANT_PORT = int(os.environ.get("QDRANT_PORT", "6333"))
+QDRANT_COLLECTION = os.environ.get("QDRANT_COLLECTION", "tigrinya_llamaindex")
+
 NEWSPAPERS = [
     {
         "id": "haddas-ertra",

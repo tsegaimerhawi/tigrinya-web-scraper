@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import ScrapePanel from './components/ScrapePanel';
 import ArticleList from './components/ArticleList';
+import RagPanel from './components/RagPanel';
 import './App.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'scrape' | 'articles'>('scrape');
+  const [activeTab, setActiveTab] = useState<'scrape' | 'articles' | 'ask'>('scrape');
 
   return (
     <div className="app">
@@ -23,11 +24,18 @@ function App() {
           >
             Articles
           </button>
+          <button
+            className={activeTab === 'ask' ? 'active' : ''}
+            onClick={() => setActiveTab('ask')}
+          >
+            Ask (RAG)
+          </button>
         </nav>
       </header>
       <main>
         {activeTab === 'scrape' && <ScrapePanel />}
         {activeTab === 'articles' && <ArticleList />}
+        {activeTab === 'ask' && <RagPanel />}
       </main>
     </div>
   );
