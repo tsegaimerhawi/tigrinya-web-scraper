@@ -1,5 +1,5 @@
 """Process API: manually trigger PDF text extraction and AI analysis."""
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 
 from fastapi import APIRouter, BackgroundTasks
@@ -21,10 +21,9 @@ def _set_status(**kwargs):
     _process_status.update(kwargs)
 
 
-async def _run_processing(filenames: List[str]):
+async def _run_processing(filenames: Optional[List[str]]):
     _set_status(running=True, stage="processing", result=None, error=None)
     try:
-        # Process only the specified PDFs
         result = process_pdfs(pdf_filenames=filenames)
         _set_status(stage="done", result=result)
     except Exception as e:
@@ -47,6 +46,15 @@ async def start_processing(
 
     background_tasks.add_task(_run_processing, request.filenames)
     return {"ok": True, "message": f"Processing {len(request.filenames)} PDFs", "count": len(request.filenames)}
+
+
+@router.post("/all")
+async def start_processing_all(background_tasks: BackgroundTasks):
+    """Process all PDFs from metadata in the background (extract text, NER, image descriptions)."""
+    if _process_status.get("running"):
+        return {"ok": False, "message": "Processing already running", "status": _process_status}
+    background_tasks.add_task(_run_processing, None)
+    return {"ok": True, "message": "Processing all PDFs from metadata"}
 
 
 @router.get("/status")

@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import articles, nlp, newspapers, scrape, process, ingest, rag
+from app.routes import articles, nlp, newspapers, scrape, process, ingest, rag, pipeline
 
 app = FastAPI(
     title="Tigrinya Web Scraper API",
@@ -25,6 +25,7 @@ app.include_router(articles.router)
 app.include_router(nlp.router)
 app.include_router(ingest.router)
 app.include_router(rag.router)
+app.include_router(pipeline.router)
 
 
 @app.get("/")

@@ -149,8 +149,50 @@ export const api = {
     return await res.json();
   },
 
+  async processAllPdfs(): Promise<{ ok: boolean; message: string }> {
+    const res = await fetch(`${API_BASE}/process/all`, { method: 'POST' });
+    return await res.json();
+  },
+
   async getProcessingStatus(): Promise<ProcessingStatus> {
     const res = await fetch(`${API_BASE}/process/status`);
+    return await res.json();
+  },
+
+  async runIngest(options?: { limit?: number; batch_size?: number; batch_delay_seconds?: number }): Promise<{
+    ok: boolean;
+    count?: number;
+    points_count?: number;
+    collection?: string;
+    error?: string;
+  }> {
+    const res = await fetch(`${API_BASE}/ingest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(options || {}),
+    });
+    return await res.json();
+  },
+
+  async getQdrantStatus(): Promise<{
+    ok: boolean;
+    host?: string;
+    port?: number;
+    collections?: { name: string; points_count: number }[];
+    error?: string;
+  }> {
+    const res = await fetch(`${API_BASE}/pipeline/qdrant-status`);
+    return await res.json();
+  },
+
+  async getValidate(): Promise<{
+    ok: boolean;
+    pdf_metadata_count: number;
+    completed_downloads: number;
+    raw_data_count: number;
+    total_words: number;
+  }> {
+    const res = await fetch(`${API_BASE}/pipeline/validate`);
     return await res.json();
   },
 
