@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import articles, nlp, newspapers, rag
+from app.routes import articles, nlp, newspapers, rag, pipeline_runner
 
 app = FastAPI(
     title="Tigrinya News API",
@@ -22,6 +22,7 @@ app.include_router(newspapers.router)
 app.include_router(articles.router)
 app.include_router(nlp.router)
 app.include_router(rag.router)
+app.include_router(pipeline_runner.router)
 
 
 @app.get("/")

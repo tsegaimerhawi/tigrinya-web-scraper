@@ -23,8 +23,8 @@ The **app** (React + FastAPI) is for **reading and asking**. The **Script Runner
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  Script Runner (port 8765) or CLI                                 │
-│  scraper.py → pdf_processor.py → llama_ingest.py                 │
+│  Pipeline UI: http://localhost:8000/pipeline  (or script_runner  │
+│  on :8765)  →  Scraper, PDF Processor, Llama Ingest               │
 └───────────────────────────┬─────────────────────────────────────┘
                             │
                             ▼
@@ -32,7 +32,7 @@ The **app** (React + FastAPI) is for **reading and asking**. The **Script Runner
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  App (backend :8000 + frontend :5173)                           │
+│  App: http://localhost:5173  (backend :8000)                     │
 │  Articles (browse, copy, NLP tools)  +  Ask (RAG)                │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -83,15 +83,20 @@ cd frontend && npm install && cd ..
 # or: cd frontend && npm run dev
 ```
 
-Open **http://localhost:5173** → **Articles** and **Ask (RAG)**.
+Open **http://localhost:5173** → **Articles** and **Ask (RAG)**. From the app header you can click **Pipeline** to open the pipeline UI in another tab.
 
 ### 4. (Optional) Run the pipeline (scrape → process → ingest)
 
+**Option A – Same backend (recommended)**  
+Open **http://localhost:8000/pipeline** in your browser. Use **Configuration**, then run **Scraper** → **PDF Processor** → **Llama Ingest**. Live output streams in the page.
+
+**Option B – Standalone Script Runner**  
 ```bash
 python script_runner.py
 ```
+Open **http://localhost:8765**. Same pipeline UI and behavior.
 
-Open **http://localhost:8765**. Use **Configuration**, then run **Scraper** → **PDF Processor** → **Llama Ingest**. After that, the app can show articles and answer questions from the ingested corpus.
+After the pipeline has run, the app at :5173 can show articles and answer questions from the ingested corpus.
 
 ---
 
@@ -139,7 +144,7 @@ tigrinya-scraper/
 | **Check Qdrant** | Tests connection and lists collections/point counts. |
 | **Validate** | Shows counts for `pdf_metadata.json` and `raw_data.json`. |
 
-Configuration (scraper limit, Qdrant host/port, collection, batch sizes) is in the UI or `runner_config.json`.
+**URL:** **http://localhost:8000/pipeline** (when the backend is running). From the main app (http://localhost:5173), click **Pipeline** in the header to open it. Configuration (scraper limit, Qdrant host/port, collection, batch sizes) is in the UI or `runner_config.json`.
 
 ---
 
