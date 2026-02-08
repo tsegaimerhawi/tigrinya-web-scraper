@@ -1,12 +1,12 @@
-"""FastAPI app for Tigrinya scraper frontend."""
+"""FastAPI app for Tigrinya News: articles and RAG only. Scraping and pipeline run separately (script_runner.py)."""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import articles, nlp, newspapers, scrape, process, ingest, rag, pipeline
+from app.routes import articles, nlp, newspapers, rag
 
 app = FastAPI(
-    title="Tigrinya Web Scraper API",
-    description="Scrape Tigrinya news, extract text, run NLP.",
+    title="Tigrinya News API",
+    description="Browse articles and ask questions (RAG). Scraping and pipeline run via script_runner.py.",
     version="0.1.0",
 )
 
@@ -19,15 +19,11 @@ app.add_middleware(
 )
 
 app.include_router(newspapers.router)
-app.include_router(scrape.router)
-app.include_router(process.router)
 app.include_router(articles.router)
 app.include_router(nlp.router)
-app.include_router(ingest.router)
 app.include_router(rag.router)
-app.include_router(pipeline.router)
 
 
 @app.get("/")
 def root():
-    return {"message": "Tigrinya Web Scraper API", "docs": "/docs"}
+    return {"message": "Tigrinya News API", "docs": "/docs"}

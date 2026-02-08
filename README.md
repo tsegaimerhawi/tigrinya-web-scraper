@@ -1,172 +1,203 @@
-# Tigrinya Web Scraper
+# 📰 Tigrinya News
 
-A full-stack web application for scraping and processing Tigrinya news articles from shabait.com, with a React frontend and FastAPI backend. Includes **LlamaIndex** ingestion into **Qdrant** and **RAG** to answer Tigrinya questions (similar to [tigrinya-agent](https://github.com/tsegaimerhawi/tigrinya-agent)).
+**Browse Haddas Ertra and ask questions in Tigrinya or English—powered by RAG and the Ge'ez script.**
 
-## Features
+A full pipeline for **Tigrinya news**: scrape PDFs from [Haddas Ertra](https://shabait.com/category/newspapers/haddas-ertra-news), extract and clean Ge'ez text, embed with **LlamaIndex** + **Gemini**, store in **Qdrant**, and query via a **React + FastAPI** app. Built for researchers, linguists, and anyone working with Tigrinya NLP and low-resource language tech.
 
-- 🕷️ **Automated Scraping**: Downloads Haddas Ertra newspaper PDFs
-- 📄 **Multi-page Navigation**: Handles pagination to access older articles
-- 🔍 **Smart PDF Detection**: Locates download links using image-based navigation
-- 🧹 **Text Cleaning**: Removes English words, navigation elements, and noise
-- 🌍 **Ge'ez Script Focus**: Preserves only Tigrinya characters, numbers, and punctuation
-- 🌐 **Web Interface**: Modern React frontend for scraping, articles, and RAG Q&A
-- 📊 **NLP Tools**: Word frequency, text statistics, sentence extraction, and more
-- 📋 **Copy Text**: Easy one-click copy of extracted article text
-- 📦 **LlamaIndex + Qdrant**: Store processed text as embeddings in a vector database
-- 🤖 **RAG**: Ask questions in Tigrinya or English; answers use the ingested news corpus
-- 🖥️ **Script Runner UI**: Separate dashboard (port 8765) to run Scrape → Process → Ingest with live output and configuration (like [tigrinya-agent](https://github.com/tsegaimerhawi/tigrinya-agent))
+---
 
-## Prerequisites
+## ✨ What You Can Do
 
-- **Python 3.8+** - [Download Python](https://www.python.org/downloads/)
-- **Node.js 18+ and npm** - [Download Node.js](https://nodejs.org/)
-- **Git** - [Download Git](https://git-scm.com/downloads)
-- **Qdrant** (optional, for RAG): run with Docker: `docker run -p 6333:6333 qdrant/qdrant`
-- **Google Gemini API key** (for NER, image descriptions, RAG embeddings and answers): set in `config.env` as `GEMINI_API_KEY` or `GOOGLE_API_KEY`
+| **In the app** | **In Script Runner** |
+|----------------|----------------------|
+| 📖 Browse scraped articles with full text and metadata | 🕷️ Download Haddas Ertra PDFs (configurable limit) |
+| 📋 Copy text, run word frequency, stats, sentence extraction | 📄 Extract Ge'ez text, NER, image descriptions → `raw_data.json` |
+| 🤖 **Ask questions in Tigrinya or English**—answers from the ingested corpus (RAG) | 📦 Ingest into Qdrant (LlamaIndex + Gemini embeddings) |
+| 🔍 Semantic search over the news corpus | ✅ Check Qdrant, validate metadata and raw data |
 
-Verify installations:
-```bash
-python3 --version  # Should be 3.8 or higher
-node --version     # Should be 18 or higher
-npm --version
+The **app** (React + FastAPI) is for **reading and asking**. The **Script Runner** (or CLI) is for **scraping, processing, and ingesting**. Run the pipeline once (or periodically), then use the app to explore and query.
+
+---
+
+## 🏗️ How It Fits Together
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Script Runner (port 8765) or CLI                                 │
+│  scraper.py → pdf_processor.py → llama_ingest.py                 │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+                            ▼
+              pdf_metadata.json   raw_data.json   Qdrant
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  App (backend :8000 + frontend :5173)                           │
+│  Articles (browse, copy, NLP tools)  +  Ask (RAG)                │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## Installation
+---
 
-### Clone the Repository
+## 🛠️ Tech Stack
+
+- **Frontend:** React, TypeScript, Vite  
+- **Backend:** FastAPI, Python 3.8+  
+- **Scraping:** Playwright, pdfplumber  
+- **NLP / RAG:** Google Gemini (embeddings + chat), LlamaIndex, Qdrant  
+- **Data:** Ge'ez-focused text cleaning, sentence splitting, optional NER and image descriptions  
+
+Inspired by the pipeline in [tigrinya-agent](https://github.com/tsegaimerhawi/tigrinya-agent).
+
+---
+
+## 🚀 Quick Start
+
+### 1. Clone and install
 
 ```bash
 git clone https://github.com/tsegaimerhawi/tigrinya-web-scraper.git
 cd tigrinya-web-scraper
-```
-
-### Install Dependencies
-
-**Backend:**
-```bash
 python3 -m venv .env
-source .env/bin/activate   # On Windows: .env\Scripts\activate
+source .env/bin/activate   # Windows: .env\Scripts\activate
 pip install -r backend/requirements.txt
 playwright install chromium
+cd frontend && npm install && cd ..
 ```
 
-**Frontend:**
+### 2. Configure
+
+- Copy `config.env.example` → `config.env`
+- Set **GEMINI_API_KEY** (or **GOOGLE_API_KEY**) for NER, image descriptions, and RAG  
+- Optional: start **Qdrant** for RAG: `docker run -p 6333:6333 qdrant/qdrant`
+
+### 3. Run the app (browse + ask)
+
 ```bash
-cd frontend
-npm install
-cd ..
-```
-
-### Configuration
-
-- Copy `config.env.example` to `config.env` and set **GEMINI_API_KEY** (or **GOOGLE_API_KEY**) for Gemini.
-- Optional: set **QDRANT_HOST**, **QDRANT_PORT**, **QDRANT_COLLECTION** if not using defaults (localhost:6333, collection `tigrinya_llamaindex`).
-- **Frontend API URL**: Edit `frontend/.env` if the backend runs on a different port (default: `http://localhost:8000`).
-- **Data directory**: Set `TIGRINYA_DATA_DIR` to change where PDFs and `raw_data.json` are stored (default: project root).
-
-## Quick Start
-
-### Option 1: Startup Scripts
-
-**Terminal 1 – Backend:**
-```bash
+# Terminal 1 – backend
 ./start-backend.sh
-```
+# or: cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
-**Terminal 2 – Frontend:**
-```bash
+# Terminal 2 – frontend
 ./start-frontend.sh
+# or: cd frontend && npm run dev
 ```
 
-Then open **http://localhost:5173** for the main app and use the **Scrape**, **Articles**, and **Ask (RAG)** tabs.
+Open **http://localhost:5173** → **Articles** and **Ask (RAG)**.
 
-### Option 2: Script Runner UI (Scrape → Process → Ingest)
-
-Run the standalone Script Runner (similar to [tigrinya-agent](https://github.com/tsegaimerhawi/tigrinya-agent)):
+### 4. (Optional) Run the pipeline (scrape → process → ingest)
 
 ```bash
-source .env/bin/activate
-pip install -r backend/requirements.txt
 python script_runner.py
 ```
 
-Open **http://localhost:8765**. You can:
+Open **http://localhost:8765**. Use **Configuration**, then run **Scraper** → **PDF Processor** → **Llama Ingest**. After that, the app can show articles and answer questions from the ingested corpus.
 
-- **Configuration** – Set scraper limit, Qdrant host/port, collection name, batch sizes (saved to `runner_config.json`).
-- **Scraper** – Download Haddas Ertra PDFs (uses `--limit` from config).
-- **PDF Processor** – Extract and clean text from PDFs; writes `raw_data.json`.
-- **Llama Ingest** – Ingest `raw_data.json` into Qdrant with LlamaIndex (Gemini embeddings).
-- **Check Qdrant** – Verify Qdrant is running and list collections.
-- **Validate Results** – Check `pdf_metadata.json` and `raw_data.json` counts.
+---
 
-Output streams in real time. Use this UI to scrape, preprocess, extract, and store news data without running the React app.
+## 📁 Project Layout
 
-### Option 3: Manual Backend + Frontend
-
-**Terminal 1 – Backend:**
-```bash
-source .env/bin/activate
-cd backend
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+tigrinya-scraper/
+├── backend/                 # FastAPI app (articles, NLP, RAG)
+│   ├── app/
+│   │   ├── routes/          # articles, nlp, rag
+│   │   └── services/        # ingest, retriever, rag, pdf, etc.
+│   └── requirements.txt
+├── frontend/                # React app (Articles + Ask)
+│   └── src/
+│       ├── components/      # ArticleList, ArticleDetail, RagPanel, NLPTools
+│       └── api/
+├── script_runner.py         # Pipeline UI (scrape, process, ingest)
+├── scraper.py               # CLI: download Haddas Ertra PDFs
+├── pdf_processor.py         # CLI: extract & clean text, NER, images
+├── llama_ingest.py          # CLI: raw_data → Qdrant (LlamaIndex)
+├── runner_config.json       # Script Runner settings
+├── config.env.example       # API keys and env template
+└── README.md
 ```
 
-**Terminal 2 – Frontend:**
-```bash
-cd frontend
-npm run dev
-```
+---
 
-### RAG (Ask Tigrinya Questions)
+## 📖 App Features (Articles + RAG)
 
-1. **Ingest data** (once): Use the Script Runner UI (Llama Ingest) or call `POST /ingest` (or run `python llama_ingest.py` from project root). Ensure Qdrant is running and `raw_data.json` exists (run Scraper + PDF Processor first).
-2. **Ask questions**: In the main app, open the **Ask (RAG)** tab and type a question in Tigrinya or English; answers are generated from the ingested corpus using Gemini.
+- **Articles**  
+  List from `raw_data.json`, open for full text. Copy to clipboard, run **NLP tools**: word frequency, character/word counts, sentence extraction, dedupe lines.
 
-You can also call the API directly: `POST /rag/ask` with body `{"question": "ኤርትራ እንታይ እያ?", "k": 5}`.
+- **Ask (RAG)**  
+  Type a question in **Tigrinya** or **English**. The app retrieves relevant chunks from Qdrant and generates an answer with Gemini. Example: *ኤርትራ እንታይ እያ?* or *What is Haddas Ertra?*
 
-## Output Files
+---
 
-- `pdf_metadata.json` – Metadata about downloaded PDFs (URLs, titles, dates, file paths)
-- `raw_data.json` – Processed text data with cleaned Ge'ez script content (used by Llama Ingest)
-- `pdfs/` – Directory containing downloaded PDF files
-- `runner_config.json` – Script Runner configuration (scraper limit, Qdrant, batch sizes)
+## 🔧 Script Runner (Pipeline)
 
-## API Endpoints
+| Step | What it does |
+|------|----------------|
+| **Scraper** | Fetches Haddas Ertra PDFs from shabait.com (limit in config). |
+| **PDF Processor** | Extracts text, keeps Ge'ez script, runs NER and image descriptions → `raw_data.json`. |
+| **Llama Ingest** | Builds sentence-level docs, embeds with Gemini, stores in Qdrant. |
+| **Check Qdrant** | Tests connection and lists collections/point counts. |
+| **Validate** | Shows counts for `pdf_metadata.json` and `raw_data.json`. |
 
-- `GET /newspapers` – List available newspapers
-- `POST /scrape` – Start scraping articles
-- `GET /scrape/status` – Get scraping status
-- `POST /process` – Run PDF processing (extract text, NER, image descriptions)
-- `GET /process/status` – Get processing status
-- `GET /articles` – List processed articles
-- `GET /articles/{index}/text` – Get full text of an article
-- `POST /nlp/word-frequency`, `POST /nlp/stats`, `POST /nlp/sentences`, `POST /nlp/dedupe-lines` – NLP utilities
-- **Ingest & RAG**
-  - `POST /ingest` – Run LlamaIndex ingestion (raw_data.json → Qdrant)
-  - `POST /rag/ask` – Answer a question using RAG (body: `{"question": "...", "k": 5}`)
-  - `POST /rag/search` – Semantic search only (body: `{"query": "...", "k": 5}`)
+Configuration (scraper limit, Qdrant host/port, collection, batch sizes) is in the UI or `runner_config.json`.
 
-See **http://localhost:8000/docs** for interactive API documentation.
+---
 
-## Configuration
+## 🌐 API (App backend)
 
-- **Backend**: `backend/app/config.py` – newspapers, data paths, Qdrant host/port/collection.
-- **Frontend**: `frontend/.env` – API base URL (default `http://localhost:8000`).
-- **Script Runner**: Use the Configuration button in the Script Runner UI, or edit `runner_config.json`.
-- **Secrets**: `config.env` – `GEMINI_API_KEY` or `GOOGLE_API_KEY`; optional `QDRANT_*` overrides.
+The app backend exposes **articles**, **NLP**, and **RAG** only (no scrape/process/ingest):
 
-## Text Cleaning
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/newspapers` | List newspapers |
+| GET | `/articles` | List articles (paginated) |
+| GET | `/articles/{index}/text` | Full text for one article |
+| POST | `/nlp/word-frequency`, `/nlp/stats`, `/nlp/sentences`, `/nlp/dedupe-lines` | NLP helpers |
+| POST | `/rag/ask` | RAG answer (body: `{"question": "...", "k": 5}`) |
+| POST | `/rag/search` | Semantic search only |
 
-The PDF processor (and backend `pdf_service`) clean text by:
+Interactive docs: **http://localhost:8000/docs**.
 
-- Removing English words and navigation elements (bullets, symbols)
-- Removing page numbers, dates, URLs
-- Keeping only Ge'ez script characters (U+1200–U+137F), numbers, and standard punctuation
-- Filtering out lines with too many special characters
+---
 
-## License
+## ⚙️ Configuration
 
-This project is for educational and research purposes. Please respect website terms of service and copyright laws when using the scraped content.
+| Where | Purpose |
+|-------|---------|
+| `config.env` | `GEMINI_API_KEY` or `GOOGLE_API_KEY`; optional `QDRANT_HOST`, `QDRANT_PORT`, `QDRANT_COLLECTION` |
+| `frontend/.env` | `VITE_API_URL` (default `http://localhost:8000`) |
+| `runner_config.json` | Scraper limit, Qdrant settings, batch sizes (Script Runner) |
+| `TIGRINYA_DATA_DIR` | Data directory (default: project root) |
 
-## Author
+---
 
-Tsegai Merhawi – Tigrinya newspaper digitization project
+## 📜 Text Processing (Ge'ez)
+
+The pipeline keeps **Ge'ez script** (U+1200–U+137F), numbers, and punctuation. It strips:
+
+- English words and navigation clutter  
+- Page numbers, URLs, copyright text  
+- Lines that are mostly symbols  
+
+So you get clean Tigrinya text for analysis and RAG.
+
+---
+
+## 📄 Output Files
+
+- **`pdf_metadata.json`** – Downloaded PDFs (URLs, titles, dates, paths)  
+- **`raw_data.json`** – Processed articles (extracted text, word count, NER, image descriptions)  
+- **`pdfs/`** – Downloaded PDF files  
+- **`runner_config.json`** – Script Runner configuration  
+
+---
+
+## 📜 License
+
+For educational and research use. Please respect the source site’s terms of service and copyright when using scraped content.
+
+---
+
+## 👤 Author
+
+**Tsegai Merhawi** – Tigrinya newspaper digitization and NLP ([tigrinya-agent](https://github.com/tsegaimerhawi/tigrinya-agent))

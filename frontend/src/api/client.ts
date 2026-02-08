@@ -33,55 +33,11 @@ export interface ArticleText extends Article {
   }[];
 }
 
-export interface ScrapeStatus {
-  running: boolean;
-  stage: string | null;
-  progress?: any;
-  result: any;
-  error: string | null;
-}
-
-export interface ScrapeRequest {
-  newspaper_id: string;
-  max_articles?: number;
-  max_pages?: number;
-  start_date?: string;
-  end_date?: string;
-}
-
-export interface ProcessingStatus {
-  ok: boolean;
-  running: boolean;
-  stage: string | null;
-  result: any;
-  error: string | null;
-}
-
 export const api = {
   async getNewspapers(): Promise<Newspaper[]> {
     const res = await fetch(`${API_BASE}/newspapers`);
     const data = await res.json();
     return data.newspapers || [];
-  },
-
-  async startScrape(req: ScrapeRequest): Promise<{ ok: boolean; message: string }> {
-    const res = await fetch(`${API_BASE}/scrape`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req),
-    });
-    return res.json();
-  },
-
-  async getScrapeStatus(): Promise<ScrapeStatus> {
-    const res = await fetch(`${API_BASE}/scrape/status`);
-    const data = await res.json();
-    return {
-      running: data.running || false,
-      stage: data.stage || null,
-      result: data.result || null,
-      error: data.error || null,
-    };
   },
 
   async getArticles(limit = 100, offset = 0): Promise<{ articles: Article[]; total: number }> {
@@ -138,62 +94,6 @@ export const api = {
     });
     const data = await res.json();
     return data.data || '';
-  },
-
-  async processPdfs(filenames: string[]): Promise<{ ok: boolean; message: string; count?: number }> {
-    const res = await fetch(`${API_BASE}/process`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filenames }),
-    });
-    return await res.json();
-  },
-
-  async processAllPdfs(): Promise<{ ok: boolean; message: string }> {
-    const res = await fetch(`${API_BASE}/process/all`, { method: 'POST' });
-    return await res.json();
-  },
-
-  async getProcessingStatus(): Promise<ProcessingStatus> {
-    const res = await fetch(`${API_BASE}/process/status`);
-    return await res.json();
-  },
-
-  async runIngest(options?: { limit?: number; batch_size?: number; batch_delay_seconds?: number }): Promise<{
-    ok: boolean;
-    count?: number;
-    points_count?: number;
-    collection?: string;
-    error?: string;
-  }> {
-    const res = await fetch(`${API_BASE}/ingest`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(options || {}),
-    });
-    return await res.json();
-  },
-
-  async getQdrantStatus(): Promise<{
-    ok: boolean;
-    host?: string;
-    port?: number;
-    collections?: { name: string; points_count: number }[];
-    error?: string;
-  }> {
-    const res = await fetch(`${API_BASE}/pipeline/qdrant-status`);
-    return await res.json();
-  },
-
-  async getValidate(): Promise<{
-    ok: boolean;
-    pdf_metadata_count: number;
-    completed_downloads: number;
-    raw_data_count: number;
-    total_words: number;
-  }> {
-    const res = await fetch(`${API_BASE}/pipeline/validate`);
-    return await res.json();
   },
 
   async askRag(question: string, k = 5): Promise<{ ok: boolean; answer: string; question: string }> {
