@@ -19,7 +19,7 @@ from app.services.preprocessor import split_into_sentences
 def _get_api_key() -> Optional[str]:
     from dotenv import load_dotenv
     load_dotenv(os.path.join(BASE_DIR, "config.env"))
-    return os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    return os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
 
 
 def load_raw_data(path: Optional[str] = None) -> List[dict]:
@@ -81,7 +81,7 @@ def run_ingestion(
 
     api_key = _get_api_key()
     if not api_key or api_key == "your_api_key_here":
-        return {"ok": False, "error": "GEMINI_API_KEY or GOOGLE_API_KEY not set", "count": 0}
+        return {"ok": False, "error": "GOOGLE_API_KEY (or GEMINI_API_KEY) not set", "count": 0}
 
     raw_data = load_raw_data(raw_data_path)
     if not raw_data:

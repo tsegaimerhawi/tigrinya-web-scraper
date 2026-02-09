@@ -12,7 +12,7 @@ load_dotenv(config_path)
 with warnings.catch_warnings(action="ignore", category=FutureWarning):
     import google.generativeai as genai
 
-api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
 if api_key:
     genai.configure(api_key=api_key)
 

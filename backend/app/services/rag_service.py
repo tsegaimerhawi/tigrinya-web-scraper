@@ -5,14 +5,14 @@ Supports single-turn and multi-turn (conversation) answers.
 import os
 from typing import Optional, List, Dict, Any
 
-from app.services.retriever_service import search
+from app.services.retriever_service import search, RetrieverError
 
 
 def _get_api_key() -> Optional[str]:
     from dotenv import load_dotenv
     from app.config import BASE_DIR
     load_dotenv(os.path.join(BASE_DIR, "config.env"))
-    return os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    return os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
 
 
 def answer(
@@ -32,11 +32,17 @@ def answer(
 
     api_key = _get_api_key()
     if not api_key:
-        return "Error: GEMINI_API_KEY or GOOGLE_API_KEY not set."
+        return "Error: GOOGLE_API_KEY (or GEMINI_API_KEY) not set."
 
-    docs = search(question, k=k, collection_name=collection_name, qdrant_host=qdrant_host, qdrant_port=qdrant_port)
+    try:
+        docs = search(question, k=k, collection_name=collection_name, qdrant_host=qdrant_host, qdrant_port=qdrant_port)
+    except RetrieverError as e:
+        return str(e)
     if not docs:
-        return "I couldn't find any relevant documents to answer your question. Make sure ingestion has been run and Qdrant is available."
+        return (
+            "I couldn't find any relevant documents for that question. "
+            "Make sure you've run the pipeline: Scrape → Process → Llama Ingest, and that Qdrant is running (e.g. docker run -p 6333:6333 qdrant/qdrant)."
+        )
 
     context = "\n\n".join(
         f"[Source: {d.get('metadata', {}).get('news_title', 'Unknown')}]\n{d.get('text', '')}"

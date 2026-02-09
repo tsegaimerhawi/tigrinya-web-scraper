@@ -2,6 +2,13 @@
 Tigrinya retriever: semantic search over Qdrant using Gemini embeddings.
 Compatible with LlamaIndex-stored payloads (text in node content).
 """
+
+
+class RetrieverError(Exception):
+    """Raised when retrieval cannot be performed (e.g. Qdrant down, no API key)."""
+    pass
+
+
 import os
 from typing import List, Dict, Any, Optional
 
@@ -12,7 +19,7 @@ def _get_api_key() -> Optional[str]:
     from dotenv import load_dotenv
     from app.config import BASE_DIR
     load_dotenv(os.path.join(BASE_DIR, "config.env"))
-    return os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    return os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
 
 
 def search(
@@ -24,13 +31,16 @@ def search(
 ) -> List[Dict[str, Any]]:
     """
     Semantic search: embed query, search Qdrant, return list of {text, score, metadata}.
+    Raises RetrieverError if Qdrant is unreachable or API key is missing.
     """
     from qdrant_client import QdrantClient
     from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
     api_key = _get_api_key()
     if not api_key:
-        return []
+        raise RetrieverError(
+            "GOOGLE_API_KEY (or GEMINI_API_KEY) is not set. Export it in your shell (e.g. in ~/.zshrc) or add to backend/config.env."
+        )
 
     collection_name = collection_name or QDRANT_COLLECTION
     qdrant_host = qdrant_host or QDRANT_HOST
@@ -38,6 +48,13 @@ def search(
 
     try:
         client = QdrantClient(host=qdrant_host, port=qdrant_port)
+    except Exception as e:
+        raise RetrieverError(
+            f"Cannot connect to Qdrant at {qdrant_host}:{qdrant_port}. "
+            "Start Qdrant with: docker run -p 6333:6333 qdrant/qdrant"
+        ) from e
+
+    try:
         embeddings = GoogleGenerativeAIEmbeddings(
             model="models/gemini-embedding-001",
             google_api_key=api_key,
@@ -48,8 +65,14 @@ def search(
             query=query_vector,
             limit=k,
         ).points
-    except Exception:
-        return []
+    except Exception as e:
+        err = str(e).lower()
+        if "not found" in err or "collection" in err or "does not exist" in err:
+            raise RetrieverError(
+                f"Collection '{collection_name}' not found or empty. "
+                "Run the pipeline: Scrape → Process → Llama Ingest, then try again."
+            ) from e
+        raise RetrieverError(f"Search failed: {e}") from e
 
     out = []
     for point in results:
