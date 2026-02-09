@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import ArticleList from './components/ArticleList';
 import RagPanel from './components/RagPanel';
+import PipelinePanel from './components/PipelinePanel';
 import './App.css';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-const PIPELINE_URL = `${API_BASE}/pipeline`;
-
 function App() {
-  const [activeTab, setActiveTab] = useState<'articles' | 'ask'>('articles');
+  const [activeTab, setActiveTab] = useState<'articles' | 'ask' | 'pipeline'>('articles');
 
   return (
     <div className="app">
@@ -26,14 +24,18 @@ function App() {
           >
             Ask (RAG)
           </button>
-          <a href={PIPELINE_URL} target="_blank" rel="noopener noreferrer" className="nav-link">
+          <button
+            className={activeTab === 'pipeline' ? 'active' : ''}
+            onClick={() => setActiveTab('pipeline')}
+          >
             Pipeline
-          </a>
+          </button>
         </nav>
       </header>
       <main>
         {activeTab === 'articles' && <ArticleList />}
         {activeTab === 'ask' && <RagPanel />}
+        {activeTab === 'pipeline' && <PipelinePanel />}
       </main>
     </div>
   );

@@ -108,4 +108,56 @@ export const api = {
     });
     return res.json();
   },
+
+  async startScrape(params: { newspaper_id: string; max_articles: number; max_pages?: number }): Promise<{ ok: boolean; message?: string }> {
+    const res = await fetch(`${API_BASE}/scrape`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newspaper_id: params.newspaper_id, max_articles: params.max_articles, max_pages: params.max_pages ?? 100 }),
+    });
+    return res.json();
+  },
+
+  async getScrapeStatus(): Promise<{ running: boolean; stage: string | null; result?: any; error?: string }> {
+    const res = await fetch(`${API_BASE}/scrape/status`);
+    const data = await res.json();
+    return { running: data.running, stage: data.stage ?? null, result: data.result, error: data.error };
+  },
+
+  async processAllPdfs(): Promise<{ ok: boolean; message?: string }> {
+    const res = await fetch(`${API_BASE}/process/all`, { method: 'POST' });
+    return res.json();
+  },
+
+  async getProcessingStatus(): Promise<{ running: boolean; stage: string | null; result?: any; error?: string }> {
+    const res = await fetch(`${API_BASE}/process/status`);
+    const data = await res.json();
+    return { running: data.running, stage: data.stage ?? null, result: data.result, error: data.error };
+  },
+
+  async runIngest(): Promise<{ ok: boolean; count?: number; points_count?: number; collection?: string; error?: string }> {
+    const res = await fetch(`${API_BASE}/ingest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    return res.json();
+  },
+
+  async getQdrantStatus(): Promise<{ ok: boolean; collections?: { name: string; points_count: number }[]; error?: string }> {
+    const res = await fetch(`${API_BASE}/pipeline/qdrant-status`);
+    const data = await res.json();
+    return { ok: data.ok, collections: data.collections, error: data.error };
+  },
+
+  async getValidate(): Promise<{ pdf_metadata_count: number; completed_downloads: number; raw_data_count: number; total_words: number }> {
+    const res = await fetch(`${API_BASE}/pipeline/validate`);
+    const data = await res.json();
+    return {
+      pdf_metadata_count: data.pdf_metadata_count ?? 0,
+      completed_downloads: data.completed_downloads ?? 0,
+      raw_data_count: data.raw_data_count ?? 0,
+      total_words: data.total_words ?? 0,
+    };
+  },
 };
