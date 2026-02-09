@@ -159,10 +159,11 @@ def process_pdfs():
         entities = ai_processor.perform_ner(extracted_text)
         
         processed_images = []
+        api_key_error_logged = {}
         if images_info:
             print(f"  - Describing {len(images_info)} images...")
             for img in images_info:
-                description = ai_processor.describe_image(img['path'])
+                description = ai_processor.describe_image(img['path'], _api_key_error_logged=api_key_error_logged)
                 processed_images.append({
                     'path': img['path'],
                     'filename': img['filename'],

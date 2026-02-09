@@ -110,16 +110,19 @@ def extract_content_from_pdf(pdf_path: str, pdf_name: str) -> Tuple[str, int, Li
                 except:
                     pass
                 
-                # Extract images (clamp bbox to page to avoid "outside parent page" errors)
+                # Extract images (clamp bbox strictly inside page to avoid "outside parent page" errors)
                 try:
                     page_width = float(page.width) if hasattr(page, 'width') else 841.89
                     page_height = float(page.height) if hasattr(page, 'height') else 1190.55
+                    # Require box fully inside page; use small inset to avoid float/edge issues
+                    eps = 1e-3
                     for i, image in enumerate(page.images):
                         try:
-                            x0 = max(0, min(image['x0'], page_width))
-                            top = max(0, min(image['top'], page_height))
-                            x1 = max(0, min(image['x1'], page_width))
-                            bottom = max(0, min(image['bottom'], page_height))
+                            x0 = max(0.0, min(float(image['x0']), page_width - eps))
+                            top = max(0.0, min(float(image['top']), page_height - eps))
+                            x1 = max(0.0, min(float(image['x1']), page_width - eps))
+                            bottom = max(0.0, min(float(image['bottom']), page_height - eps))
+                            # Ensure left < right and top < bottom after clamping
                             if x0 >= x1 or top >= bottom:
                                 continue
                             cropped_page = page.crop((x0, top, x1, bottom))
@@ -160,6 +163,7 @@ def process_pdfs(pdf_filenames: List[str] = None) -> dict:
         metadata = json.load(f)
 
     processed = []
+    api_key_error_logged = {}
     for item in metadata:
         fn = item.get("pdf_filename")
         if not fn:
@@ -184,7 +188,7 @@ def process_pdfs(pdf_filenames: List[str] = None) -> dict:
         
         processed_images = []
         for img in images_info:
-            description = ai_processor.describe_image(img['path'])
+            description = ai_processor.describe_image(img['path'], _api_key_error_logged=api_key_error_logged)
             processed_images.append({
                 'path': img['path'],
                 'filename': img['filename'],
