@@ -96,11 +96,15 @@ export const api = {
     return data.data || '';
   },
 
-  async askRag(question: string, k = 5): Promise<{ ok: boolean; answer: string; question: string }> {
+  async askRag(
+    question: string,
+    k = 5,
+    history?: { role: string; content: string }[]
+  ): Promise<{ ok: boolean; answer: string; question: string }> {
     const res = await fetch(`${API_BASE}/rag/ask`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question, k }),
+      body: JSON.stringify({ question, k, history: history ?? [] }),
     });
     return res.json();
   },

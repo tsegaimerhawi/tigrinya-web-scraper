@@ -1,6 +1,6 @@
-import google.generativeai as genai
 import os
 import json
+import warnings
 from dotenv import load_dotenv
 from app.config import BASE_DIR
 
@@ -8,21 +8,24 @@ from app.config import BASE_DIR
 config_path = os.path.join(BASE_DIR, 'config.env')
 load_dotenv(config_path)
 
-# Configure Gemini
-api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-if not api_key:
-    # Try system env if not in file
-    pass
+# Use deprecated package with suppressed FutureWarning; model name updated for current API
+with warnings.catch_warnings(action="ignore", category=FutureWarning):
+    import google.generativeai as genai
 
+api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 if api_key:
     genai.configure(api_key=api_key)
+
+# Model supported by current Gemini API (gemini-1.5-flash often returns 404 on v1beta)
+GEMINI_MODEL = "gemini-2.0-flash"
+
 
 def get_model():
     """Get the Gemini model instance."""
     if not api_key:
         return None
     try:
-        return genai.GenerativeModel('gemini-1.5-flash')
+        return genai.GenerativeModel(GEMINI_MODEL)
     except Exception as e:
         print(f"Error configuring model: {e}")
         return None

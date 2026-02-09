@@ -1,23 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { api } from '../api/client';
 
+export type ChatMessage = { role: 'user' | 'assistant'; content: string };
+
 export default function RagPanel() {
-  const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleAsk = async () => {
-    if (!question.trim()) return;
-    setLoading(true);
+  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSend = async () => {
+    const text = input.trim();
+    if (!text || loading) return;
+    setInput('');
     setError(null);
-    setAnswer(null);
+    const userMessage: ChatMessage = { role: 'user', content: text };
+    setMessages((prev) => [...prev, userMessage]);
+    setLoading(true);
     try {
-      const res = await api.askRag(question.trim());
-      if (res.ok && res.answer) {
-        setAnswer(res.answer);
+      const history = messages.map((m) => ({ role: m.role, content: m.content }));
+      const res = await api.askRag(text, 5, history);
+      if (res.ok && res.answer != null) {
+        setMessages((prev) => [...prev, { role: 'assistant', content: res.answer }]);
       } else {
-        setError((res as any).error || 'No answer returned.');
+        setError((res as { error?: string })?.error || 'No answer returned.');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Request failed.');
@@ -26,36 +38,75 @@ export default function RagPanel() {
     }
   };
 
+  const handleClear = () => {
+    setMessages([]);
+    setError(null);
+  };
+
   return (
     <div className="rag-panel">
-      <h2>Ask Tigrinya (RAG)</h2>
-      <p className="subtitle">
-        Ask questions in Tigrinya or English. Answers use the ingested news corpus (run Scrape → Process → Llama Ingest first).
-      </p>
-      <div className="form-row">
-        <textarea
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="e.g. ኤርትራ እንታይ እያ? or What is Haddas Ertra?"
-          rows={2}
-          disabled={loading}
-          className="rag-input"
-        />
+      <div className="rag-panel-header">
+        <h2>Ask Tigrinya (RAG)</h2>
         <button
-          onClick={handleAsk}
-          disabled={loading || !question.trim()}
-          className="btn-primary"
+          type="button"
+          onClick={handleClear}
+          className="btn-secondary rag-clear-btn"
+          disabled={messages.length === 0}
         >
-          {loading ? 'Thinking…' : 'Ask'}
+          New conversation
         </button>
       </div>
-      {error && <p className="error">{error}</p>}
-      {answer && (
-        <div className="rag-answer">
-          <strong>Answer:</strong>
-          <p className="answer-text">{answer}</p>
+      <p className="subtitle">
+        Ask questions in Tigrinya or English. This is a conversation: you can ask follow-ups in the same session.
+      </p>
+
+      <div className="rag-chat">
+        <div className="rag-messages">
+          {messages.length === 0 && (
+            <p className="rag-placeholder">Ask something to start the conversation…</p>
+          )}
+          {messages.map((msg, i) => (
+            <div key={i} className={`rag-message rag-message-${msg.role}`}>
+              <span className="rag-message-role">{msg.role === 'user' ? 'You' : 'RAG'}</span>
+              <div className="rag-message-content">{msg.content}</div>
+            </div>
+          ))}
+          {loading && (
+            <div className="rag-message rag-message-assistant">
+              <span className="rag-message-role">RAG</span>
+              <div className="rag-message-content rag-typing">Thinking…</div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
         </div>
-      )}
+
+        <div className="rag-form-row">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder="e.g. ኤርትራ እንታይ እያ? or What is Haddas Ertra?"
+            rows={2}
+            disabled={loading}
+            className="rag-input"
+          />
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={loading || !input.trim()}
+            className="btn-primary"
+          >
+            {loading ? '…' : 'Send'}
+          </button>
+        </div>
+      </div>
+
+      {error && <p className="error">{error}</p>}
     </div>
   );
 }

@@ -110,11 +110,18 @@ def extract_content_from_pdf(pdf_path: str, pdf_name: str) -> Tuple[str, int, Li
                 except:
                     pass
                 
-                # Extract images
+                # Extract images (clamp bbox to page to avoid "outside parent page" errors)
                 try:
+                    page_width = float(page.width) if hasattr(page, 'width') else 841.89
+                    page_height = float(page.height) if hasattr(page, 'height') else 1190.55
                     for i, image in enumerate(page.images):
                         try:
-                            x0, top, x1, bottom = image['x0'], image['top'], image['x1'], image['bottom']
+                            x0 = max(0, min(image['x0'], page_width))
+                            top = max(0, min(image['top'], page_height))
+                            x1 = max(0, min(image['x1'], page_width))
+                            bottom = max(0, min(image['bottom'], page_height))
+                            if x0 >= x1 or top >= bottom:
+                                continue
                             cropped_page = page.crop((x0, top, x1, bottom))
                             img_obj = cropped_page.to_image(resolution=200)
                             
