@@ -40,8 +40,8 @@ def answer(
         return str(e)
     if not docs:
         return (
-            "I couldn't find any relevant documents for that question. "
-            "Make sure you've run the pipeline: Scrape → Process → Llama Ingest, and that Qdrant is running (e.g. docker run -p 6333:6333 qdrant/qdrant)."
+            "I couldn't find any relevant documents in the current vector store. "
+            "If the index is empty, run the Pipeline (Scrape → Process → Ingest) to populate it. Ensure Qdrant is running (e.g. docker run -p 6333:6333 qdrant/qdrant)."
         )
 
     context = "\n\n".join(

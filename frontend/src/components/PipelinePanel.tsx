@@ -85,7 +85,7 @@ export default function PipelinePanel() {
     <div className="pipeline-panel">
       <h2>Pipeline</h2>
       <p className="subtitle">
-        Run the full flow: Scrape → Process → Ingest. Then check Qdrant or validate data.
+        Update the index whenever you want: Scrape → Process → Ingest. RAG answers from the stored vectors independently—run this only when you want to refresh the data. Then check Qdrant or validate.
       </p>
 
       <div className="pipeline-steps">

@@ -70,7 +70,7 @@ def search(
         if "not found" in err or "collection" in err or "does not exist" in err:
             raise RetrieverError(
                 f"Collection '{collection_name}' not found or empty. "
-                "Run the pipeline: Scrape → Process → Llama Ingest, then try again."
+                "Run the Pipeline (Scrape → Process → Ingest) to populate the vector store; RAG will then use it."
             ) from e
         raise RetrieverError(f"Search failed: {e}") from e
 

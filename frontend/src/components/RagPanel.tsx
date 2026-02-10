@@ -57,7 +57,7 @@ export default function RagPanel() {
         </button>
       </div>
       <p className="subtitle">
-        Ask questions in Tigrinya or English. This is a conversation: you can ask follow-ups in the same session.
+        Ask questions in Tigrinya or English. Answers use the <strong>current vector store</strong>—RAG is independent of the pipeline. Run the Pipeline tab whenever you want to update the index; RAG will keep using whatever is stored until then.
       </p>
 
       <div className="rag-chat">
